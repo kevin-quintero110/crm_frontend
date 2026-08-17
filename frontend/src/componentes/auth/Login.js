@@ -1,7 +1,7 @@
 import React, { useState, useContext } from 'react';
 import Swal from 'sweetalert2';
 import clienteAxios from '../../config/axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom'; // <-- Agrega Link
 import { CRMContext } from '../../context/CRMContext';
 
 export default function Login() {
@@ -30,12 +30,9 @@ export default function Login() {
           timer: 1500,
         });
 
-        // Redirigir después de login
         navigate('/', { replace: true });
       }
     } catch (error) {
-      //console.log(error);
-
       if(error.response){
         Swal.fire({
           icon: 'error',
@@ -51,8 +48,6 @@ export default function Login() {
           timer: 1500,
         });
       }
-
-      
     }
   };
 
@@ -90,14 +85,18 @@ export default function Login() {
               placeholder="Password para Iniciar Sesión"
               required
               onChange={leerDatos}
-               autoComplete="current-password"
-              />
+              autoComplete="current-password"
+            />
           </div>
 
           <input type="submit" value="Iniciar Sesión" className="btn btn-verde btn-block" />
         </form>
+
+        {/* === NUEVO ENLACE A REGISTRO === */}
+        <p className="text-center" style={{ marginTop: '15px' }}>
+          ¿No tienes cuenta? <Link to="/registro">Regístrate aquí</Link>
+        </p>
       </div>
     </div>
   );
 }
-

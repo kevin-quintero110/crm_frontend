@@ -4,7 +4,7 @@ import App from './App';
 import reportWebVitals from './reportWebVitals';
 import { CRMProvider } from "./context/CRMContext";
 import { BrowserRouter as Router } from 'react-router-dom'; // Importa Router
-
+import './index.css';
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <CRMProvider>

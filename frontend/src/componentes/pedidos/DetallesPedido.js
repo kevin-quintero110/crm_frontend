@@ -37,7 +37,7 @@ export default function DetallesPedido({ pedido, eliminarPedido }) {
           })
           .then((res) => {
             if (res.status === 200) {
-              eliminarPedido(idPedido); // Actualiza la lista de pedidos en el padre
+              eliminarPedido(idPedido);
               Swal.fire({
                 title: 'Pedido eliminado',
                 text: res.data.mensaje,
@@ -70,7 +70,7 @@ export default function DetallesPedido({ pedido, eliminarPedido }) {
         <div className="articulos-pedido">
           <p className="productos">Artículos del Pedido:</p>
           <ul>
-            {pedido.pedido.map((articulos) => (
+            {pedido.items?.map((articulos) => (
               <li key={`${pedido._id}-${articulos.producto._id}`}>
                 <p>{articulos.producto.nombre}</p>
                 <p>Precio: ${articulos.producto.precio}</p>

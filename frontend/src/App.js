@@ -12,6 +12,7 @@ import Pedidos from "./componentes/pedidos/Pedidos";
 import NuevoPedido from "./componentes/pedidos/NuevoPedido";
 import Login from "./componentes/auth/Login";
 import { CRMContext } from "./context/CRMContext";
+import Registro from './componentes/auth/Registro';
 
 function App() {
   const [auth] = useContext(CRMContext);
@@ -25,6 +26,7 @@ function App() {
           <Routes>
             {/* Rutas públicas */}
             <Route path="/iniciar-sesion" element={<Login />} />
+            <Route path="/registro" element={<Registro />} />
 
             {/* Rutas privadas */}
             <Route
