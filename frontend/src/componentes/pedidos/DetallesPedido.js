@@ -7,50 +7,71 @@ export default function DetallesPedido({ pedido, eliminarPedido }) {
   const [clienteData, setClienteData] = useState(null);
   const [cargandoCliente, setCargandoCliente] = useState(false);
 
-  // Obtener datos del cliente si solo tenemos el ID
   useEffect(() => {
     const obtenerCliente = async () => {
-      // Si ya tenemos los datos del cliente en el pedido, no hacemos nada
       if (pedido.cliente && typeof pedido.cliente === 'object' && pedido.cliente.nombre) {
         setClienteData(pedido.cliente);
         return;
       }
 
-      // Si solo tenemos el ID del cliente, lo obtenemos de la API
-      if (pedido.cliente && typeof pedido.cliente === 'string') {
+      if (pedido.cliente_id && typeof pedido.cliente_id === 'number') {
         try {
           setCargandoCliente(true);
           const token = localStorage.getItem('token');
-          
+
           if (!token) {
-            console.error('No hay token disponible');
+            setClienteData({ nombre: 'Cliente sin autenticación', apellido: '' });
             return;
           }
 
-          const response = await clienteAxios.get(`/clientes/${pedido.cliente}`, {
+          const response = await clienteAxios.get(`/clientes/${pedido.cliente_id}`, {
             headers: {
               Authorization: `Bearer ${token}`,
             },
           });
 
-          if (response.data && response.data.cliente) {
-            setClienteData(response.data.cliente);
+          console.log('Respuesta completa de la API:', response.data);
+
+          // Extraemos el cliente correctamente
+          if (response.data) {
+            // Si la respuesta tiene una propiedad "cliente"
+            if (response.data.cliente) {
+              setClienteData(response.data.cliente);
+            } 
+            // Si la respuesta ES el cliente directamente
+            else if (response.data._id || response.data.nombre) {
+              setClienteData(response.data);
+            } 
+            else {
+              setClienteData({ nombre: 'Cliente sin datos', apellido: '' });
+            }
+          } else {
+            setClienteData({ nombre: 'Cliente sin datos', apellido: '' });
           }
         } catch (error) {
           console.error('Error al obtener los datos del cliente:', error);
-          // Mostrar un mensaje amigable en la UI
-          setClienteData({ 
-            nombre: 'Cliente no disponible', 
-            apellido: '' 
-          });
+          
+          let nombreError = 'Cliente no disponible';
+          if (error.response?.status === 404) {
+            nombreError = 'Cliente no encontrado';
+          } else if (error.response?.status === 403) {
+            nombreError = 'Sin permiso para ver el cliente';
+          } else if (error.response?.status === 401) {
+            nombreError = 'Sesión expirada';
+          }
+          
+          setClienteData({ nombre: nombreError, apellido: '' });
         } finally {
           setCargandoCliente(false);
         }
+        return;
       }
+
+      setClienteData({ nombre: 'Pedido sin cliente', apellido: '' });
     };
 
     obtenerCliente();
-  }, [pedido.cliente]);
+  }, [pedido.cliente_id]);
 
   const eliminarPedidoAPI = (idPedido) => {
     const token = localStorage.getItem('token');
@@ -95,7 +116,6 @@ export default function DetallesPedido({ pedido, eliminarPedido }) {
           .catch((error) => {
             console.error('Error al eliminar el pedido:', error);
             
-            // Manejar errores específicos
             let mensajeError = 'Hubo un problema al eliminar el pedido. Intenta nuevamente.';
             if (error.response && error.response.status === 404) {
               mensajeError = 'El pedido que intentas eliminar ya no existe.';
@@ -116,24 +136,19 @@ export default function DetallesPedido({ pedido, eliminarPedido }) {
     });
   };
 
-  // Función para obtener el nombre completo del cliente
   const obtenerNombreCliente = () => {
-    // Si tenemos los datos del cliente (ya sea del pedido o de la API)
     if (clienteData) {
       return `${clienteData.nombre || ''} ${clienteData.apellido || ''}`.trim() || 'Cliente sin nombre';
     }
     
-    // Si el pedido ya tiene los datos del cliente
     if (pedido.cliente && typeof pedido.cliente === 'object' && pedido.cliente.nombre) {
       return `${pedido.cliente.nombre || ''} ${pedido.cliente.apellido || ''}`.trim() || 'Cliente sin nombre';
     }
     
-    // Si está cargando
     if (cargandoCliente) {
       return 'Cargando cliente...';
     }
     
-    // Si no hay datos
     return 'Cliente no disponible';
   };
 

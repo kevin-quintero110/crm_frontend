@@ -15,9 +15,9 @@ function NuevoCliente(props) {
     }
   }, [auth, navigate]);
 
+
   const [cliente, guardarCliente] = useState({
     nombre: '',
-    apellido: '',
     empresa: '',
     email: '',
     telefono: ''
@@ -33,12 +33,20 @@ function NuevoCliente(props) {
   const agregarCliente = (e) => {
     e.preventDefault();
 
-    const token = localStorage.getItem('token'); // Obtener el token desde localStorage
+    const token = localStorage.getItem('token');
+
+   
+    const datosParaEnviar = {
+      nombre: cliente.nombre,
+      email: cliente.email,
+      telefono: cliente.telefono,
+      empresa: cliente.empresa
+    };
 
     clienteAxios
-      .post('/clientes', cliente, {
+      .post('/clientes', datosParaEnviar, {
         headers: {
-          'Authorization': `Bearer ${token}`, // Asegúrate de enviar el token en el encabezado
+          'Authorization': `Bearer ${token}`,
         }
       })
       .then((res) => {
@@ -46,6 +54,7 @@ function NuevoCliente(props) {
           Swal.fire({
             icon: 'error',
             title: 'Ya existe este cliente!',
+            text: 'El email ya está registrado',
             showConfirmButton: false,
             timer: 1500
           });
@@ -57,22 +66,29 @@ function NuevoCliente(props) {
             showConfirmButton: false,
             timer: 1500
           });
+          navigate('/', { replace: true });
         }
-        navigate('/', { replace: true });
       })
       .catch((error) => {
-        console.error(error);
+        console.error('Error al agregar cliente:', error);
+        
+        let mensajeError = 'No se pudo agregar el cliente. Por favor, intente nuevamente.';
+        if (error.response?.data?.mensaje) {
+          mensajeError = error.response.data.mensaje;
+        }
+        
         Swal.fire({
           icon: 'error',
           title: 'Error al agregar cliente',
-          text: 'No se pudo agregar el cliente. Por favor, intente nuevamente.',
+          text: mensajeError,
         });
       });
   };
 
+
   const validarCliente = () => {
-    const { nombre, apellido, email, empresa, telefono } = cliente;
-    return !nombre.length || !apellido.length || !email.length || !empresa.length || !telefono.length;
+    const { nombre, email, empresa, telefono } = cliente;
+    return !nombre?.length || !email?.length || !empresa?.length || !telefono?.length;
   };
 
   return (
@@ -80,33 +96,58 @@ function NuevoCliente(props) {
       <h2>Nuevo cliente</h2>
       <form onSubmit={agregarCliente}>
         <legend>Llena todos los campos</legend>
+        
         <div className="campo">
           <label>Nombre:</label>
-          <input type="text" placeholder="Nombre Cliente" name="nombre" onChange={actualizarState} />
-        </div>
-
-        <div className="campo">
-          <label>Apellido:</label>
-          <input type="text" placeholder="Apellido Cliente" name="apellido" onChange={actualizarState} />
+          <input 
+            type="text" 
+            placeholder="Nombre Cliente" 
+            name="nombre" 
+            onChange={actualizarState} 
+            value={cliente.nombre || ''}
+          />
         </div>
 
         <div className="campo">
           <label>Empresa:</label>
-          <input type="text" placeholder="Empresa Cliente" name="empresa" onChange={actualizarState} />
+          <input 
+            type="text" 
+            placeholder="Empresa Cliente" 
+            name="empresa" 
+            onChange={actualizarState}
+            value={cliente.empresa || ''}
+          />
         </div>
 
         <div className="campo">
           <label>Email:</label>
-          <input type="email" placeholder="Email Cliente" name="email" onChange={actualizarState} />
+          <input 
+            type="email" 
+            placeholder="Email Cliente" 
+            name="email" 
+            onChange={actualizarState}
+            value={cliente.email || ''}
+          />
         </div>
 
         <div className="campo">
           <label>Teléfono:</label>
-          <input type="tel" placeholder="Teléfono Cliente" name="telefono" onChange={actualizarState} />
+          <input 
+            type="tel" 
+            placeholder="Teléfono Cliente" 
+            name="telefono" 
+            onChange={actualizarState}
+            value={cliente.telefono || ''}
+          />
         </div>
 
         <div className="enviar">
-          <input type="submit" className="btn btn-azul" value="Agregar Cliente" disabled={validarCliente()} />
+          <input 
+            type="submit" 
+            className="btn btn-azul" 
+            value="Agregar Cliente" 
+            disabled={validarCliente()} 
+          />
         </div>
       </form>
     </>

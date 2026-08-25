@@ -5,44 +5,73 @@ import Swal from 'sweetalert2';
 import { CRMContext } from '../../context/CRMContext';
 
 function EditarCliente() {
-  const { id } = useParams();
+  const { id } = useParams(); 
   const [auth, guardarAuth] = useContext(CRMContext);
   let navigate = useNavigate();
 
   const [cliente, datosCliente] = useState({
+    id: '', 
     nombre: '',
-    apellido: '',
     empresa: '',
     email: '',
     telefono: ''
   });
 
-  // Verificar autenticación y redirigir si no está autenticado
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState(null);
+
   useEffect(() => {
     if (!auth.auth && !localStorage.getItem('token')) {
       navigate('/iniciar-sesion', { replace: true });
+      return;
     }
 
     const consultarAPI = async () => {
       const token = localStorage.getItem('token');
       try {
+        setCargando(true);
+        setError(null);
+        
+      
         const clienteConsulta = await clienteAxios.get(`clientes/${id}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
           },
         });
-        datosCliente(clienteConsulta.data);
+        
+        console.log('Cliente obtenido:', clienteConsulta.data); 
+
+        if (clienteConsulta.data) {
+  
+          datosCliente({
+            id: clienteConsulta.data.id || id, 
+            nombre: clienteConsulta.data.nombre || '',
+            empresa: clienteConsulta.data.empresa || '',
+            email: clienteConsulta.data.email || '',
+            telefono: clienteConsulta.data.telefono || ''
+          });
+        }
       } catch (error) {
         console.error("Error al consultar el cliente:", error);
+        setError('Error al cargar el cliente');
         Swal.fire({
           icon: 'error',
           title: 'Error al obtener el cliente',
-          text: 'Por favor, intente nuevamente.',
+          text: error.response?.data?.mensaje || 'Por favor, intente nuevamente.',
         });
+        navigate('/');
+      } finally {
+        setCargando(false);
       }
     };
-    consultarAPI();
-  }, [auth, id, navigate]);
+    
+    if (id) {
+      consultarAPI();
+    } else {
+      setError('ID de cliente no válido');
+      setCargando(false);
+    }
+  }, [id, navigate, auth]);
 
   const actualizarState = e => {
     datosCliente({
@@ -53,45 +82,76 @@ function EditarCliente() {
 
   const actualizarCliente = async e => {
     e.preventDefault();
+    
+   
+    if (!cliente.id) {
+      console.error('Cliente sin ID:', cliente); 
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se encontró el ID del cliente. Por favor, recarga la página.',
+      });
+      return;
+    }
+
     const token = localStorage.getItem('token');
     
     try {
-      const res = await clienteAxios.put(`/clientes/${cliente._id}`, cliente, {
+      const datosParaEnviar = {
+        nombre: cliente.nombre,
+        email: cliente.email,
+        telefono: cliente.telefono,
+        empresa: cliente.empresa
+      };
+
+      console.log('Enviando PUT a:', `/clientes/${cliente.id}`, datosParaEnviar);
+
+      const res = await clienteAxios.put(`/clientes/${cliente.id}`, datosParaEnviar, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       });
 
-      if (res.data.code === 11000) {
-        Swal.fire({
-          icon: 'error',
-          title: 'Error, algo está mal',
-          showConfirmButton: false,
-          timer: 1500
-        });
-      } else {
-        Swal.fire({
-          position: 'center',
-          icon: 'success',
-          title: 'Se actualizó el cliente',
-          showConfirmButton: false,
-          timer: 1500
-        });
-        navigate('/', { replace: true });
-      }
+      Swal.fire({
+        position: 'center',
+        icon: 'success',
+        title: 'Cliente actualizado correctamente',
+        showConfirmButton: false,
+        timer: 1500
+      });
+      
+      navigate('/', { replace: true });
     } catch (error) {
+      console.error('Error al actualizar:', error);
       Swal.fire({
         icon: 'error',
         title: 'Error al actualizar el cliente',
-        text: 'No se pudo actualizar. Intente nuevamente.',
+        text: error.response?.data?.mensaje || 'No se pudo actualizar. Intente nuevamente.',
       });
     }
   };
 
   const validarCliente = () => {
-    const { nombre, apellido, email, empresa, telefono } = cliente;
-    return !nombre.length || !apellido.length || !email.length || !empresa.length || !telefono.length;
+    if (!cliente) return true;
+    
+    const nombre = cliente.nombre || '';
+    const email = cliente.email || '';
+    const empresa = cliente.empresa || '';
+    const telefono = cliente.telefono || '';
+    
+    return nombre.trim() === '' || 
+           email.trim() === '' || 
+           empresa.trim() === '' || 
+           telefono.trim() === '';
   };
+
+  if (cargando) {
+    return <div className="cargando">Cargando cliente...</div>;
+  }
+
+  if (error) {
+    return <div className="error">{error}</div>;
+  }
 
   return (
     <>
@@ -106,18 +166,7 @@ function EditarCliente() {
             placeholder="Nombre Cliente"
             name="nombre"
             onChange={actualizarState}
-            value={cliente.nombre}
-          />
-        </div>
-
-        <div className="campo">
-          <label>Apellido:</label>
-          <input
-            type="text"
-            placeholder="Apellido Cliente"
-            name="apellido"
-            onChange={actualizarState}
-            value={cliente.apellido}
+            value={cliente.nombre || ''}
           />
         </div>
 
@@ -128,7 +177,7 @@ function EditarCliente() {
             placeholder="Empresa Cliente"
             name="empresa"
             onChange={actualizarState}
-            value={cliente.empresa}
+            value={cliente.empresa || ''}
           />
         </div>
 
@@ -139,7 +188,7 @@ function EditarCliente() {
             placeholder="Email Cliente"
             name="email"
             onChange={actualizarState}
-            value={cliente.email}
+            value={cliente.email || ''}
           />
         </div>
 
@@ -150,7 +199,7 @@ function EditarCliente() {
             placeholder="Teléfono Cliente"
             name="telefono"
             onChange={actualizarState}
-            value={cliente.telefono}
+            value={cliente.telefono || ''}
           />
         </div>
 
