@@ -160,19 +160,49 @@ export default function DetallesPedido({ pedido, eliminarPedido }) {
         <p className="nombre">
           Cliente: {obtenerNombreCliente()}
         </p>
+        
+        {/*  ETIQUETA DE NOTIFICADO */}
+        <p className="notificado" style={{ margin: '5px 0' }}>
+          {pedido.notificado ? (
+            <span style={{ 
+              backgroundColor: '#d4edda', 
+              color: '#155724', 
+              padding: '4px 12px', 
+              borderRadius: '20px',
+              fontWeight: 'bold',
+              display: 'inline-block',
+              fontSize: '14px'
+            }}>
+              ☄️ Notificado y Confirmado
+            </span>
+          ) : (
+            <span style={{ 
+              backgroundColor: '#fff3cd', 
+              color: '#856404', 
+              padding: '4px 12px', 
+              borderRadius: '20px',
+              fontWeight: 'bold',
+              display: 'inline-block',
+              fontSize: '14px'
+            }}>
+              ⏳ Pendiente Confirmacion
+            </span>
+          )}
+        </p>
+
         <div className="articulos-pedido">
           <p className="productos">Artículos del Pedido:</p>
           <ul>
             {pedido.items?.map((articulos, index) => (
               <li key={`${pedido._id}-${articulos.producto?._id || index}`}>
                 <p>{articulos.producto?.nombre || 'Producto no disponible'}</p>
-                <p>Precio: {formatearPrecio(articulos.producto?.precio)}</p> {/*  Formateado */}
+                <p>Precio: {formatearPrecio(articulos.producto?.precio)}</p>
                 <p>Cantidad: {articulos.cantidad || '0'}</p>
               </li>
             ))}
           </ul>
         </div>
-        <p className="total">Total: {formatearPrecio(pedido.total)}</p> {/*  Formateado */}
+        <p className="total">Total: {formatearPrecio(pedido.total)}</p>
       </div>
       <div className="acciones">
         <button
@@ -187,4 +217,4 @@ export default function DetallesPedido({ pedido, eliminarPedido }) {
       </div>
     </li>
   );
-}  //deploy
+}
