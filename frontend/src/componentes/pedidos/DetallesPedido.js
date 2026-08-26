@@ -187,4 +187,4 @@ export default function DetallesPedido({ pedido, eliminarPedido }) {
       </div>
     </li>
   );
-}
+}  //deploy
