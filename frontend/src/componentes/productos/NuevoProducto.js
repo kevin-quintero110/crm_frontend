@@ -23,11 +23,62 @@ function NuevoProducto() {
   const [producto, guardarProducto] = useState({
     nombre: '',
     precio: '',
+    imagen: ''
   });
 
-  const [archivo, guardarArchivo] = useState('');
+  const [subiendoImagen, setSubiendoImagen] = useState(false);
+  const [imagenSeleccionada, setImagenSeleccionada] = useState(null);
 
-  // Leer datos del formulario
+  const cloudName = process.env.REACT_APP_CLOUDINARY_CLOUD_NAME || 'bq5dbhkd';
+  const uploadPreset = process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET || 'crm_uploads';
+
+  const subirImagenACloudinary = async (archivo) => {
+    if (!archivo) return null;
+    
+    setSubiendoImagen(true);
+    
+    const formData = new FormData();
+    formData.append('file', archivo);
+    formData.append('upload_preset', uploadPreset);
+
+    try {
+      const respuesta = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+        method: 'POST',
+        body: formData
+      });
+
+      const datos = await respuesta.json();
+      
+      if (datos.secure_url) {
+        guardarProducto(prev => ({
+          ...prev,
+          imagen: datos.secure_url
+        }));
+        
+        Swal.fire({
+          icon: 'success',
+          title: '✅ Imagen subida',
+          timer: 1000,
+          showConfirmButton: false
+        });
+        
+        return datos.secure_url;
+      } else {
+        throw new Error(datos.error?.message || 'No se pudo subir la imagen');
+      }
+    } catch (error) {
+      console.error('Error al subir imagen:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error al subir imagen',
+        text: error.message || 'Intenta nuevamente'
+      });
+      return null;
+    } finally {
+      setSubiendoImagen(false);
+    }
+  };
+
   const actualizarState = (e) => {
     guardarProducto({
       ...producto,
@@ -35,26 +86,34 @@ function NuevoProducto() {
     });
   };
 
-  // Coloca la imagen en el state
-  const leerArchivo = (e) => {
-    guardarArchivo(e.target.files[0]);
+  const leerArchivo = async (e) => {
+    const archivo = e.target.files[0];
+    if (archivo) {
+      setImagenSeleccionada(archivo);
+      await subirImagenACloudinary(archivo);
+    }
   };
 
-  // Agregar producto
   const agregarProducto = async (e) => {
     e.preventDefault();
 
-    // Crear un formData
-    const formData = new FormData();
-    formData.append('nombre', producto.nombre);
-    formData.append('precio', producto.precio);
-    formData.append('imagen', archivo);
+    if (!producto.imagen) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Imagen requerida',
+        text: 'Debes seleccionar y esperar que la imagen se suba correctamente.',
+      });
+      return;
+    }
 
     try {
-      const res = await clienteAxios.post('/productos', formData, {
+      const res = await clienteAxios.post('/productos', {
+        nombre: producto.nombre,
+        precio: Number(producto.precio),
+        imagen: producto.imagen
+      }, {
         headers: {
-          'Content-Type': 'multipart/form-data',
-          Authorization: `Bearer ${auth.token}`, // Asegurar que se envíe el token
+          Authorization: `Bearer ${auth.token}`,
         },
       });
 
@@ -68,19 +127,23 @@ function NuevoProducto() {
         });
       }
 
-      // Redirigir a la lista de productos
       navigate('/productos', { replace: true });
     } catch (error) {
-      console.log(error);
+      console.error('Error al agregar producto:', error);
       Swal.fire({
         icon: 'error',
         title: 'Hubo un error',
-        text: 'Vuelve a intentarlo',
+        text: error.response?.data?.mensaje || 'Vuelve a intentarlo',
       });
     }
   };
 
-  const validarProducto = () => !producto.nombre || !producto.precio || !archivo;
+  const validarProducto = () => {
+    return !producto.nombre.trim() || 
+           !producto.precio || 
+           !producto.imagen || 
+           subiendoImagen;
+  };
 
   return (
     <>
@@ -96,7 +159,8 @@ function NuevoProducto() {
             placeholder="Nombre Producto"
             name="nombre"
             onChange={actualizarState}
-            value={producto.nombre}
+            value={producto.nombre || ''}
+            required
           />
         </div>
 
@@ -106,23 +170,57 @@ function NuevoProducto() {
             type="number"
             name="precio"
             min="0.00"
-            step="1"
+            step="0.01" 
             placeholder="Precio"
             onChange={actualizarState}
-            value={producto.precio}
+            value={producto.precio || ''}
+            required
           />
         </div>
 
         <div className="campo">
           <label>Imagen:</label>
-          <input type="file" name="imagen" onChange={leerArchivo} />
+          
+          {producto.imagen && (
+            <div style={{ marginBottom: '10px' }}>
+              <p>Imagen seleccionada:</p>
+              <img 
+                src={producto.imagen} 
+                alt="Producto" 
+                width="200"
+                style={{ 
+                  borderRadius: '8px',
+                  border: '1px solid #ddd',
+                  padding: '5px'
+                }}
+              />
+            </div>
+          )}
+
+          <input
+            type="file"
+            name="imagen"
+            onChange={leerArchivo}
+            accept="image/jpeg,image/png,image/jpg,image/webp"
+            disabled={subiendoImagen}
+          />
+          
+          {subiendoImagen && (
+            <p style={{ color: '#007bff' }}>⏳ Subiendo imagen a Cloudinary...</p>
+          )}
+          
+          {imagenSeleccionada && !subiendoImagen && producto.imagen && (
+            <p style={{ color: '#28a745' }}>☄️ Imagen subida correctamente</p>
+          )}
+          
+          <small>Selecciona una imagen (JPEG, PNG, JPG o WebP)</small>
         </div>
 
         <div className="enviar">
           <input
             type="submit"
             className="btn btn-azul"
-            value="Agregar Producto"
+            value={subiendoImagen ? '⏳ Subiendo imagen...' : 'Agregar Producto'}
             disabled={validarProducto()}
           />
         </div>

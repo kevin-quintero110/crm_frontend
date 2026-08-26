@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
 import clienteAxios from '../../config/axios';
+import { formatearPrecio } from '../../helpers/formatearPrecio'; 
 
 export default function DetallesPedido({ pedido, eliminarPedido }) {
   const [loading, setLoading] = useState(false);
@@ -165,13 +166,13 @@ export default function DetallesPedido({ pedido, eliminarPedido }) {
             {pedido.items?.map((articulos, index) => (
               <li key={`${pedido._id}-${articulos.producto?._id || index}`}>
                 <p>{articulos.producto?.nombre || 'Producto no disponible'}</p>
-                <p>Precio: ${articulos.producto?.precio || '0'}</p>
+                <p>Precio: {formatearPrecio(articulos.producto?.precio)}</p> {/*  Formateado */}
                 <p>Cantidad: {articulos.cantidad || '0'}</p>
               </li>
             ))}
           </ul>
         </div>
-        <p className="total">Total: ${pedido.total || 'Total no disponible'}</p>
+        <p className="total">Total: {formatearPrecio(pedido.total)}</p> {/*  Formateado */}
       </div>
       <div className="acciones">
         <button

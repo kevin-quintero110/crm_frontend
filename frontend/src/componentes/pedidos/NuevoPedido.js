@@ -5,9 +5,10 @@ import FormBuscarProducto from './FormBuscarProducto';
 import Swal from 'sweetalert2';
 import FormCantidadProducto from './FormCantidadProducto';
 import { CRMContext } from '../../context/CRMContext';
+import { formatearPrecio } from '../../helpers/formatearPrecio'; 
 
 function NuevoPedido() {
-  const [auth] = useContext(CRMContext); // No es necesario `guardarAuth` si solo lees el contexto
+  const [auth] = useContext(CRMContext);
   const navigate = useNavigate();
 
   const { id } = useParams();
@@ -34,7 +35,7 @@ function NuevoPedido() {
       try {
         const resultado = await clienteAxios.get(`/clientes/${id}`, {
           headers: {
-            Authorization: `Bearer ${auth.token}`, // Token para solicitudes protegidas
+            Authorization: `Bearer ${auth.token}`,
           },
         });
         guardarCliente(resultado.data);
@@ -78,7 +79,7 @@ function NuevoPedido() {
 
         if (!existeProducto) {
           guardarProductos([...productos, productoResultado]);
-          actualizarTotal(); // Actualizamos el total cuando se agrega un nuevo producto
+          actualizarTotal();
         } else {
           Swal.fire({
             icon: 'info',
@@ -109,20 +110,20 @@ function NuevoPedido() {
     if (todosProductos[i].cantidad === 0) return;
     todosProductos[i].cantidad--;
     guardarProductos(todosProductos);
-    actualizarTotal(); // Recalcular el total al modificar la cantidad
+    actualizarTotal();
   };
 
   const aumentarProductos = (i) => {
     const todosProductos = [...productos];
     todosProductos[i].cantidad++;
     guardarProductos(todosProductos);
-    actualizarTotal(); // Recalcular el total al modificar la cantidad
+    actualizarTotal();
   };
 
   const eliminarProductoPedido = (id) => {
     const todosProductos = productos.filter((producto) => producto.producto !== id);
     guardarProductos(todosProductos);
-    actualizarTotal(); // Recalcular el total al eliminar el producto
+    actualizarTotal();
   };
 
   // Calcular el total
@@ -206,7 +207,8 @@ function NuevoPedido() {
         ))}
       </ul>
 
-      <p className="total">Total a pagar: <span>${total}</span></p>
+      {/*  Total formateado */}
+      <p className="total">Total a pagar: <span>{formatearPrecio(total)}</span></p>
 
       {total > 0 && (
         <form onSubmit={realizarPedido}>

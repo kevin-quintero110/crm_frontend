@@ -4,15 +4,30 @@ import Swal from 'sweetalert2';
 import clienteAxios from '../../config/axios';
 
 export default function Producto({ producto, eliminarDeLista }) {
-  const [loading, setLoading] = useState(false); // Para manejar el estado de carga
+  const [loading, setLoading] = useState(false);
 
  
-  // Función para eliminar un producto
+   const formatearPrecio = (precio) => {
+    if (!precio && precio !== 0) return '$0.00';
+    const numero = Number(precio);
+    if (isNaN(numero)) return '$0.00';
+    return `$${numero.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
+  };
+
+ 
+  const getImagenUrl = (imagen) => {
+    if (!imagen) return null;
+    // Si ya es una URL completa (Cloudinary), la devuelve tal cual
+    if (imagen.startsWith('http://') || imagen.startsWith('https://')) {
+      return imagen;
+    }
+    // Si es un nombre de archivo local (para compatibilidad)
+    return `http://localhost:5000/uploads/${imagen}`;
+  };
+
   const eliminarProducto = (idProducto) => {
-    // Obtiene el token de autenticación desde el localStorage
     const token = localStorage.getItem('token');
 
-    // Verifica si no hay token
     if (!token) {
       Swal.fire({
         icon: 'error',
@@ -32,18 +47,17 @@ export default function Producto({ producto, eliminarDeLista }) {
       confirmButtonText: "Sí, borrar",
     }).then((result) => {
       if (result.isConfirmed) {
-        setLoading(true); // Inicia el estado de carga
+        setLoading(true);
 
-        // Solicitud DELETE a la API con el token de autenticación
         clienteAxios
           .delete(`/productos/${idProducto}`, {
             headers: {
-              Authorization: `Bearer ${token}`, // Enviar el token en los encabezados
+              Authorization: `Bearer ${token}`,
             },
           })
           .then((res) => {
             if (res.status === 200) {
-              eliminarDeLista(idProducto); // Elimina el producto de la lista local
+              eliminarDeLista(idProducto);
               Swal.fire({
                 title: "Producto eliminado",
                 text: res.data.mensaje,
@@ -60,7 +74,7 @@ export default function Producto({ producto, eliminarDeLista }) {
             });
           })
           .finally(() => {
-            setLoading(false); // Finaliza el estado de carga
+            setLoading(false);
           });
       }
     });
@@ -70,14 +84,21 @@ export default function Producto({ producto, eliminarDeLista }) {
     <li className="producto">
       <div className="info-producto">
         <p className="nombre">{producto.nombre}</p>
-        <p className="precio">{producto.precio} </p>
-        {producto.imagen ? (
+        <p className="precio">{formatearPrecio(producto.precio)}</p> {/*  Precio formateado */}
+        {producto.imagen && (
           <img
             alt="imagen producto"
-            src={`http://localhost:5000/uploads/${producto.imagen}`}
-            
+            src={getImagenUrl(producto.imagen)}
+            style={{ maxWidth: '100px', maxHeight: '100px', objectFit: 'cover' }}
+            onError={(e) => {
+              e.target.style.display = 'none';
+              const mensaje = document.createElement('p');
+              mensaje.style.color = 'red';
+              mensaje.textContent = '⚠️ Imagen no disponible';
+              e.target.parentElement.appendChild(mensaje);
+            }}
           />
-        ) : null}
+        )}
       </div>
       <div className="acciones">
         <Link to={`/productos/editar/${producto._id}`} className="btn btn-azul">
@@ -89,7 +110,7 @@ export default function Producto({ producto, eliminarDeLista }) {
           type="button"
           className="btn btn-rojo btn-eliminar"
           onClick={() => eliminarProducto(producto._id)}
-          disabled={loading} // Deshabilita el botón mientras se elimina
+          disabled={loading}
         >
           <i className="fas fa-times"></i>
           {loading ? "Eliminando..." : "Eliminar Producto"}
